@@ -1,0 +1,78 @@
+mongo:
+  image: mongo
+  ports:
+    - "27017:27017"
+  restart: always
+  entrypoint: [ "/usr/bin/mongod", "--replSet", "rs", "--smallfiles", "--httpinterface", "--rest" ]
+  environment:
+    MONGODB_PASS: password
+
+mongosetup:
+  image: yeasy/mongosetup
+  mem_limit: 1024m
+  links:
+    - mongo:mongo
+
+elasticsearch:
+  image: elasticsearch
+  mem_limit: 1024m
+  ports:
+    - "9200:9200"
+    - "9300:9300"
+
+redis: 
+  networks:
+    - redis-network
+  command: 
+    - redis-server
+    - "--appendonly"
+    - "yes"
+  image: redis
+  ports: 
+    - "6379:6379"
+
+nodejs: 
+  networks:
+    - api-network
+    - redis-network
+  build: .
+  command: npm start
+  environment:
+    - NODE_ENV=development
+  depends_on: 
+    - redis
+  ports: 
+    - "3000:3000"
+  restart: always
+  volumes:
+    - /var/www/api/node_modules
+
+webserver:
+  image: nginx:mainline-alpine
+  container_name: webserver
+  restart: unless-stopped
+  ports:
+    - "80:80"
+    - "443:443"
+  volumes:
+    - web-root:/var/www/html
+    - ./nginx-conf:/etc/nginx/conf.d
+    - certbot-etc:/etc/letsencrypt
+    - certbot-var:/var/lib/letsencrypt
+    - dhparam:/etc/ssl/certs
+    - htpasswd:/etc/nginx/htpasswd
+  depends_on:
+    - nodejs
+  networks:
+    - api-network
+
+certbot:
+  image: certbot/certbot
+  container_name: certbot
+  volumes:
+    - certbot-etc:/etc/letsencrypt
+    - certbot-var:/var/lib/letsencrypt
+    - web-root:/var/www/html
+  depends_on:
+    - webserver
+  command: certonly --webroot --webroot-path=/var/www/html --email auggod@resonate.is --agree-tos --no-eff-email --force-renewal -d upload.resonate.ninja
