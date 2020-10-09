@@ -4,8 +4,13 @@ import elasticClient from '../elasticClient'
 
 const Schema = mongoose.Schema
 
-const LabelSchema = new Schema({
-  id: Number,
+const ProfileSchema = new Schema({
+  user_id: Number, // user ID from wordpress
+  kind: {
+    type: String,
+    enum: ['label', 'artist', 'band'],
+    default: 'artist'
+  },
   name: {
     type: String,
     es_indexed: true
@@ -16,15 +21,15 @@ const LabelSchema = new Schema({
   timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
 })
 
-LabelSchema.plugin(mexp, {
+ProfileSchema.plugin(mexp, {
   client: elasticClient,
-  index: 'labels',
-  type: 'label'
+  index: 'profiles',
+  type: 'profile'
 })
 
-const Label = db.model('Label', LabelSchema, 'Labels')
+const Profile = db.model('Profile', ProfileSchema, 'Profiles')
 
-Label
+Profile
   .esSynchronize()
 
-export default Label
+export default Profile

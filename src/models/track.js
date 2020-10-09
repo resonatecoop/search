@@ -5,8 +5,7 @@ import elasticClient from '../elasticClient'
 const Schema = mongoose.Schema
 
 const TrackSchema = new Schema({
-  id: Number,
-  user: Number,
+  track_id: Number,
   title: {
     type: String,
     es_indexed: true
@@ -33,9 +32,7 @@ TrackSchema.plugin(mexp, {
 
 const Track = db.model('Track', TrackSchema, 'Tracks')
 
-const query = Track.find().populate('user')
-
 Track
-  .esSynchronize(query, '+resume')
+  .esSynchronize()
 
 export default Track

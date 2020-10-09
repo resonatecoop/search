@@ -25,9 +25,7 @@ const validateQuery = new AJV({
 })
 
 const Track = require('./models/track')
-const Artist = require('./models/artist')
-const Band = require('./models/band')
-const Label = require('./models/label')
+const Profile = require('./models/profile')
 
 const app = new Koa()
 
@@ -53,15 +51,11 @@ router.get('/', async (ctx, next) => {
         }
       }, {
         hydrate: {
-          select: 'title display_artist tags',
-          populate: {
-            path: 'user', // TODO make it work with dynamic ref
-            select: 'name'
-          },
+          select: 'title display_artist tags track_id',
           docsOnly: true
         }
       }),
-      labels: Label.esSearch({
+      profiles: Profile.esSearch({
         multi_match: {
           fields: ['name'],
           query: q,
@@ -72,41 +66,13 @@ router.get('/', async (ctx, next) => {
         }
       }, {
         hydrate: {
-          select: 'name',
-          docsOnly: true
-        }
-      }),
-      bands: Band.esSearch({
-        multi_match: {
-          fields: ['name'],
-          query: q,
-          max_expansions: 1,
-          prefix_length: 1,
-          fuzziness: 'AUTO',
-          minimum_should_match: '3<90%'
-        }
-      }, {
-        hydrate: {
-          select: 'name',
-          docsOnly: true
-        }
-      }),
-      artists: Artist.esSearch({
-        multi_match: {
-          fields: ['name'],
-          query: q,
-          max_expansions: 1,
-          prefix_length: 1,
-          fuzziness: 'AUTO',
-          minimum_should_match: '3<90%'
-        }
-      }, {
-        hydrate: {
-          select: 'name',
+          select: 'name kind user_id',
           docsOnly: true
         }
       })
     })
+
+    console.log(result)
 
     ctx.body = {
       data: result

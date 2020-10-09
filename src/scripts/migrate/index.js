@@ -6,6 +6,7 @@ import winston from 'winston'
 import Promise from 'bluebird'
 import mongoose from 'mongoose'
 import yargs from 'yargs'
+import decodeUriComponent from 'decode-uri-component'
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/resonate'
 
@@ -15,9 +16,7 @@ const db = mongoose.connection
 db.on('error', (err) => console.error(err))
 
 const Track = require('../../models/track')
-const Label = require('../../models/label')
-const Artist = require('../../models/artist')
-const Band = require('../../models/band')
+const Profile = require('../../models/profile')
 
 const query = (query, values) => {
   return sequelize.query(query, {
@@ -42,7 +41,7 @@ const logger = winston.createLogger({
   ]
 })
 
-const syncArtistsAndBands = async () => {
+const syncProfiles = async () => {
   logger.info('starting sync')
 
   const result = await query(`
@@ -52,35 +51,26 @@ const syncArtistsAndBands = async () => {
     FROM rsntr_users AS user
     JOIN rsntr_usermeta AS um ON(um.user_id = user.ID)
     INNER JOIN rsntr_usermeta AS umrole ON(umrole.user_id = user.ID AND umrole.meta_key = 'role' AND umrole.meta_value IN('member', 'bands', 'label-owner'))
-    GROUP BY um.user_id
+    GROUP BY um.user_id, role
     ORDER BY id
   `)
 
   const promises = Promise.map(result, (item) => {
-    if (item.role === 'member') {
-      return Artist.findOneAndUpdate(
-        { id: item.id },
-        {
-          id: item.id,
-          name: item.name
-        },
-        { new: true, upsert: true, useFindAndModify: false }
-      )
-    }
-    if (item.role === 'bands') {
-      return Band.findOneAndUpdate(
-        { id: item.id },
-        { id: item.id, name: item.name },
-        { new: true, upsert: true, useFindAndModify: false }
-      )
-    }
-    if (item.role === 'label-owner') {
-      return Label.findOneAndUpdate(
-        { id: item.id },
-        { id: item.id, name: item.name },
-        { new: true, upsert: true, useFindAndModify: false }
-      )
-    }
+    const kind = {
+      member: 'artist',
+      'label-owner': 'label',
+      bands: 'band'
+    }[item.role]
+
+    return Profile.findOneAndUpdate(
+      { user_id: item.id, kind: kind },
+      {
+        user_id: item.id,
+        kind: kind,
+        name: item.name
+      },
+      { new: true, upsert: true, useFindAndModify: false }
+    )
   }, { concurrency: 100 })
 
   return Promise.all(promises)
@@ -90,7 +80,7 @@ const syncTracks = async () => {
   logger.info('starting sync')
 
   const result = await query(`
-    SELECT track.track_name as title, track.tid as id, track.uid as artist_id, um.meta_value as display_artist, umRole.meta_value as role, tag.tagnames as tags
+    SELECT track.track_name as title, track.tid as id, um.meta_value as display_artist, umRole.meta_value as role, tag.tagnames as tags
     FROM tracks as track
     INNER JOIN rsntr_usermeta as um ON(um.user_id = track.uid AND meta_key = 'nickname')
     INNER JOIN rsntr_usermeta as umRole ON(umRole.user_id = track.uid AND umRole.meta_key = 'role' AND umRole.meta_value IN('member', 'bands', 'label-owner'))
@@ -101,19 +91,22 @@ const syncTracks = async () => {
   `)
 
   const promises = Promise.map(result, async (item) => {
-    const tags = item.tags ? item.tags.toLowerCase().split(',') : []
-
     return Track.findOneAndUpdate(
-      { id: item.id },
+      { track_id: item.id },
       {
-        id: item.id,
-        title: item.title,
-        user: item.id,
-        display_artist: item.display_artist,
-        tags: tags
+        track_id: item.id,
+        title: decodeUriComponent(item.title),
+        display_artist: decodeUriComponent(item.display_artist),
+        tags: decodeUriComponent(item.tags)
+          .split(',')
+          .map(item => item.trim())
+          .map(tag => decodeUriComponent(tag)
+            .split(',')
+            .map(tag => tag.trim())
+          ).flat(1)
       },
       { new: true, upsert: true, useFindAndModify: false }
-    ).populate('user')
+    )
   }, { concurrency: 100 })
 
   return Promise.all(promises)
@@ -128,7 +121,7 @@ yargs // eslint-disable-line
       })
   }, (argv) => {
     return Promise.all([
-      syncArtistsAndBands()
+      syncProfiles()
     ]).then(() => {
       logger.info('synced artists and bands')
       return syncTracks()
