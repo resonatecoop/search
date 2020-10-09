@@ -56,13 +56,8 @@ router.get('/', async (ctx, next) => {
         }
       }),
       profiles: Profile.esSearch({
-        multi_match: {
-          fields: ['name'],
-          query: q,
-          max_expansions: 1,
-          prefix_length: 1,
-          fuzziness: 'AUTO',
-          minimum_should_match: '3<90%'
+        query_string: {
+          query: q
         }
       }, {
         hydrate: {
@@ -71,8 +66,6 @@ router.get('/', async (ctx, next) => {
         }
       })
     })
-
-    console.log(result)
 
     ctx.body = {
       data: result
