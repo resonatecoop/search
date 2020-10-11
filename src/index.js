@@ -1,7 +1,7 @@
 import Koa from 'koa'
 import AJV from 'ajv'
 import Router from '@koa/router'
-import hash from 'promise-hash/lib/promise-hash'
+// import hash from 'promise-hash/lib/promise-hash'
 
 const validateQuery = new AJV({
   coerceTypes: true,
@@ -13,13 +13,7 @@ const validateQuery = new AJV({
   required: ['q'],
   properties: {
     q: {
-      type: 'string',
-      minLength: 3
-    },
-    limit: {
-      type: 'number',
-      maximum: 100,
-      minimum: 1
+      type: 'string'
     }
   }
 })
@@ -43,32 +37,61 @@ router.get('/', async (ctx, next) => {
 
     const q = ctx.request.query.q
 
-    const result = await hash({
-      tracks: Track.esSearch({
-        multi_match: {
-          fields: ['display_artist', 'title', 'tags'],
-          query: q
-        }
-      }, {
-        hydrate: {
-          select: 'title display_artist tags track_id',
-          docsOnly: true
-        }
+    const result = await Promise.all([
+      new Promise((resolve, reject) => {
+        return Track.esSearch({
+          from: 0,
+          size: 50,
+          query: {
+            multi_match: {
+              query: q,
+              fields: ['display_artist', 'title', 'tags'],
+              operator: 'or'
+            }
+          }
+        }, {
+          hydrate: true,
+          hydrateWithESResults: true,
+          hydrateOptions: {
+            select: 'title display_artist tags track_id'
+          }
+        }, (err, results) => {
+          if (err) return reject(err)
+          const data = results.hits.hits.map(result => {
+            return Object.assign({}, result._doc, {
+              kind: 'track',
+              score: result._esResult._score
+            })
+          })
+          return resolve(data)
+        })
       }),
-      profiles: Profile.esSearch({
-        query_string: {
-          query: q
-        }
-      }, {
-        hydrate: {
-          select: 'name kind user_id',
-          docsOnly: true
-        }
+      new Promise((resolve, reject) => {
+        return Profile.search({
+          query_string: {
+            query: q,
+            fuzziness: 'AUTO'
+          }
+        }, {
+          hydrate: true,
+          hydrateWithESResults: true,
+          hydrateOptions: {
+            select: 'name kind user_id'
+          }
+        }, (err, results) => {
+          if (err) return reject(err)
+          const data = results.hits.hits.map(result => {
+            return Object.assign({}, result._doc, {
+              score: result._esResult._score
+            })
+          })
+          return resolve(data)
+        })
       })
-    })
+    ])
 
     ctx.body = {
-      data: result
+      data: result.flat(1).sort((a, b) => b.score - a.score)
     }
   } catch (err) {
     ctx.throw(ctx.status, err.message)

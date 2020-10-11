@@ -1,6 +1,6 @@
 import { mongoose, db } from '../mongoose'
-import mexp from 'mongoose-elasticsearch-xp'
-import elasticClient from '../elasticClient'
+import esClient from '../elasticClient'
+import mongoosastic from 'mongoosastic'
 
 const Schema = mongoose.Schema
 
@@ -21,15 +21,26 @@ const ProfileSchema = new Schema({
   timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
 })
 
-ProfileSchema.plugin(mexp, {
-  client: elasticClient,
-  index: 'profiles',
-  type: 'profile'
+ProfileSchema.plugin(mongoosastic, {
+  esClient: esClient
 })
 
 const Profile = db.model('Profile', ProfileSchema, 'Profiles')
 
-Profile
-  .esSynchronize()
+const stream = Profile.synchronize()
+let count = 0
+
+stream.on('data', function (err, doc) {
+  if (err) throw err
+  count++
+})
+
+stream.on('close', function () {
+  console.log('indexed ' + count + ' documents!')
+})
+
+stream.on('error', function (err) {
+  console.log(err)
+})
 
 export default Profile
