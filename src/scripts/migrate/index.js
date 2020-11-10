@@ -15,6 +15,7 @@ mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
 const db = mongoose.connection
 db.on('error', (err) => console.error(err))
 
+// TODO add Release
 const Track = require('../../models/track')
 const Profile = require('../../models/profile')
 
@@ -42,7 +43,7 @@ const logger = winston.createLogger({
 })
 
 const syncProfiles = async () => {
-  logger.info('starting sync')
+  logger.info('starting syncing profiles')
 
   const result = await query(`
     SELECT user.ID AS id,
@@ -55,7 +56,7 @@ const syncProfiles = async () => {
     ORDER BY id
   `)
 
-  const promises = Promise.map(result, (item) => {
+  return Promise.map(result, (item) => {
     const kind = {
       member: 'artist',
       'label-owner': 'label',
@@ -72,25 +73,23 @@ const syncProfiles = async () => {
       { new: true, upsert: true, useFindAndModify: false }
     )
   }, { concurrency: 100 })
-
-  return Promise.all(promises)
 }
 
 const syncTracks = async () => {
-  logger.info('starting sync')
+  logger.info('starting syncing tracks')
 
   const result = await query(`
     SELECT track.track_name as title, track.tid as id, um.meta_value as display_artist, umRole.meta_value as role, tag.tagnames as tags
     FROM tracks as track
     INNER JOIN rsntr_usermeta as um ON(um.user_id = track.uid AND meta_key = 'nickname')
     INNER JOIN rsntr_usermeta as umRole ON(umRole.user_id = track.uid AND umRole.meta_key = 'role' AND umRole.meta_value IN('member', 'bands', 'label-owner'))
-    INNER JOIN tags as tag ON(tag.tid = track.tid)
+    LEFT JOIN tags as tag ON(tag.tid = track.tid)
     WHERE track.status IN(0, 2, 3)
     AND track.track_album != ''
     AND track.track_cover_art != ''
   `)
 
-  const promises = Promise.map(result, async (item) => {
+  return Promise.map(result, async (item) => {
     return Track.findOneAndUpdate(
       { track_id: item.id },
       {
@@ -108,8 +107,6 @@ const syncTracks = async () => {
       { new: true, upsert: true, useFindAndModify: false }
     )
   }, { concurrency: 100 })
-
-  return Promise.all(promises)
 }
 
 yargs // eslint-disable-line
@@ -120,9 +117,7 @@ yargs // eslint-disable-line
         describe: 'artist id'
       })
   }, (argv) => {
-    return Promise.all([
-      syncProfiles()
-    ]).then(() => {
+    return syncProfiles().then(() => {
       logger.info('synced artists and bands')
       return syncTracks()
     }).then(() => {
