@@ -38,6 +38,7 @@ TrackSchema.plugin(mongoosastic, {
 
 const Track = db.model('Track', TrackSchema, 'Tracks')
 
+/*
 const stream = Track.synchronize()
 let count = 0
 
@@ -53,5 +54,6 @@ stream.on('close', function () {
 stream.on('error', function (err) {
   console.log(err)
 })
+*/
 
 export default Track

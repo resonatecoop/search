@@ -27,6 +27,7 @@ ProfileSchema.plugin(mongoosastic, {
 
 const Profile = db.model('Profile', ProfileSchema, 'Profiles')
 
+/*
 const stream = Profile.synchronize()
 let count = 0
 
@@ -42,5 +43,6 @@ stream.on('close', function () {
 stream.on('error', function (err) {
   console.log(err)
 })
+*/
 
 export default Profile
