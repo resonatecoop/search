@@ -1,78 +1,79 @@
-mongo:
-  image: mongo
-  ports:
-    - "27017:27017"
-  restart: always
-  entrypoint: [ "/usr/bin/mongod", "--replSet", "rs", "--smallfiles", "--httpinterface", "--rest" ]
-  environment:
-    MONGODB_PASS: password
+services:
+  mongo:
+    image: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: $MONGO_ROOT_PASSWORD
+    env_file: .env
+    networks:
+      - search-api-network
+    ports:
+      - "27017:27017"
 
-mongosetup:
-  image: yeasy/mongosetup
-  mem_limit: 1024m
-  links:
-    - mongo:mongo
+  search-api:
+    networks:
+      - search-api-network
+    build: .
+    command: npm start
+    environment:
+      - NODE_ENV=development
+    depends_on:
+      - mongo
+    ports:
+      - "3000:3000"
+    restart: always
+    volumes:
+      - /var/www/api/node_modules
 
-elasticsearch:
-  image: elasticsearch
-  mem_limit: 1024m
-  ports:
-    - "9200:9200"
-    - "9300:9300"
+  webserver:
+    image: nginx:mainline-alpine
+    container_name: webserver
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - web-root:/var/www/html
+      - ./nginx-conf:/etc/nginx/conf.d
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/lib/letsencrypt
+      - dhparam:/etc/ssl/certs
+      - htpasswd:/etc/nginx/htpasswd
+    depends_on:
+      - search-api
+    networks:
+      - search-api-network
 
-redis: 
-  networks:
-    - redis-network
-  command: 
-    - redis-server
-    - "--appendonly"
-    - "yes"
-  image: redis
-  ports: 
-    - "6379:6379"
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/lib/letsencrypt
+      - web-root:/var/www/html
+    depends_on:
+      - webserver
+    command: certonly --webroot --webroot-path=/var/www/html --email auggod@resonate.is --agree-tos --no-eff-email --force-renewal -d search.resonate.ninja
 
-nodejs: 
-  networks:
-    - api-network
-    - redis-network
-  build: .
-  command: npm start
-  environment:
-    - NODE_ENV=development
-  depends_on: 
-    - redis
-  ports: 
-    - "3000:3000"
-  restart: always
-  volumes:
-    - /var/www/api/node_modules
+networks:
+  search-api-network:
+    driver: bridge
 
-webserver:
-  image: nginx:mainline-alpine
-  container_name: webserver
-  restart: unless-stopped
-  ports:
-    - "80:80"
-    - "443:443"
-  volumes:
-    - web-root:/var/www/html
-    - ./nginx-conf:/etc/nginx/conf.d
-    - certbot-etc:/etc/letsencrypt
-    - certbot-var:/var/lib/letsencrypt
-    - dhparam:/etc/ssl/certs
-    - htpasswd:/etc/nginx/htpasswd
-  depends_on:
-    - nodejs
-  networks:
-    - api-network
+volumes:
+  certbot-etc:
+  certbot-var:
+  web-root:
+    driver: local
+    driver_opts:
+      type: none
+      device: "${PWD}/public/"
+      o: bind
+  dhparam:
+    driver: local
+    driver_opts:
+      type: none
+      device: "${PWD}/dhparam/"
+      o: bind
 
-certbot:
-  image: certbot/certbot
-  container_name: certbot
-  volumes:
-    - certbot-etc:/etc/letsencrypt
-    - certbot-var:/var/lib/letsencrypt
-    - web-root:/var/www/html
-  depends_on:
-    - webserver
-  command: certonly --webroot --webroot-path=/var/www/html --email auggod@resonate.is --agree-tos --no-eff-email --force-renewal -d upload.resonate.ninja
+version: "3.7"
