@@ -5,7 +5,6 @@ WORKDIR /var/www/api
 
 COPY . .
 
-RUN npm i -g npm
 RUN npm install
 RUN npm run build
 
