@@ -9,6 +9,9 @@ const TrackSchema = new Schema({
     type: Number,
     es_indexed: true
   },
+  creator_id: {
+    type: Number
+  },
   title: {
     type: String,
     es_indexed: true
@@ -25,6 +28,10 @@ const TrackSchema = new Schema({
   tags: {
     type: [String],
     es_indexed: true
+  },
+  composer: {
+    type: String,
+    es_indexed: true
   }
 }, {
   strict: true,
@@ -37,23 +44,5 @@ TrackSchema.plugin(mongoosastic, {
 })
 
 const Track = db.model('Track', TrackSchema, 'Tracks')
-
-/*
-const stream = Track.synchronize()
-let count = 0
-
-stream.on('data', function (err, doc) {
-  if (err) throw err
-  count++
-})
-
-stream.on('close', function () {
-  console.log('indexed ' + count + ' documents!')
-})
-
-stream.on('error', function (err) {
-  console.log(err)
-})
-*/
 
 export default Track

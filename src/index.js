@@ -19,6 +19,7 @@ const validateQuery = new AJV({
 })
 
 const Track = require('./models/track')
+const Release = require('./models/release')
 const Profile = require('./models/profile')
 
 const app = new Koa()
@@ -38,6 +39,34 @@ router.get('/', async (ctx, next) => {
     const q = ctx.request.query.q
 
     const result = await Promise.all([
+      new Promise((resolve, reject) => {
+        return Release.esSearch({
+          from: 0,
+          size: 50,
+          query: {
+            multi_match: {
+              query: q,
+              fields: ['display_artist', 'title', 'tags'],
+              operator: 'or'
+            }
+          }
+        }, {
+          hydrate: true,
+          hydrateWithESResults: true,
+          hydrateOptions: {
+            select: 'title display_artist tags track_group_id'
+          }
+        }, (err, results) => {
+          if (err) return reject(err)
+          const data = results.hits.hits.map(result => {
+            return Object.assign({}, result._doc, {
+              kind: 'release',
+              score: result._esResult._score
+            })
+          })
+          return resolve(data)
+        })
+      }),
       new Promise((resolve, reject) => {
         return Track.esSearch({
           from: 0,

@@ -32,13 +32,7 @@ app
       total: 'Rate-Limit-Total'
     },
     max: 100,
-    disableHeader: false,
-    whitelist: (ctx) => {
-      // some logic that returns a boolean
-    },
-    blacklist: (ctx) => {
-      // some logic that returns a boolean
-    }
+    disableHeader: false
   }))
   .use(session(app))
   .use(compress({

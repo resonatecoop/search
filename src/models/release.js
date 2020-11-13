@@ -4,28 +4,32 @@ import mongoosastic from 'mongoosastic'
 
 const Schema = mongoose.Schema
 
-const ProfileSchema = new Schema({
-  user_id: Number, // user ID from wordpress
-  kind: {
-    type: String,
-    enum: ['label', 'artist', 'band'],
-    default: 'artist'
+const ReleaseSchema = new Schema({
+  track_group_id: {
+    type: String // release uuid
   },
-  name: {
+  title: {
     type: String,
+    es_indexed: true
+  },
+  creator_id: {
+    type: Number
+  },
+  display_artist: {
     es_boost: 2.0,
-    es_indexed: true
-  },
-  bio: {
     type: String,
     es_indexed: true
   },
-  city: {
+  about: {
     type: String,
     es_indexed: true
   },
-  country: {
-    type: String,
+  composers: {
+    type: [String],
+    es_indexed: true
+  },
+  performers: {
+    type: [String],
     es_indexed: true
   },
   tags: {
@@ -38,10 +42,12 @@ const ProfileSchema = new Schema({
   timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
 })
 
-ProfileSchema.plugin(mongoosastic, {
+ReleaseSchema.plugin(mongoosastic, {
   esClient: esClient
 })
 
-const Profile = db.model('Profile', ProfileSchema, 'Profiles')
+const Release = db.model('Release', ReleaseSchema, 'Releases')
 
-export default Profile
+Release.synchronize()
+
+export default Release
