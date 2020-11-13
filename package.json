@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "babel-node -r ./node_modules/dotenv-safe/config ./src/server.js",
-    "start": "node server.js",
+    "start": "node -r ./node_modules/dotenv-safe/config ./lib/server.js",
     "build": "babel src -d lib"
   },
   "keywords": [
