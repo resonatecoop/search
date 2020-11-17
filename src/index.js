@@ -26,6 +26,77 @@ const app = new Koa()
 
 const router = new Router()
 
+router.get('/tag/:tag', async (ctx, next) => {
+  const tag = ctx.params.tag
+
+  try {
+    const result = await Promise.all([
+      new Promise((resolve, reject) => {
+        return Release.esSearch({
+          from: 0,
+          size: 50,
+          query: {
+            term: {
+              tags: {
+                value: tag
+              }
+            }
+          }
+        }, {
+          hydrate: true,
+          hydrateWithESResults: true,
+          hydrateOptions: {
+            select: 'title display_artist tags track_group_id'
+          }
+        }, (err, results) => {
+          if (err) return reject(err)
+          const data = results.hits.hits.map(result => {
+            return Object.assign({}, result._doc, {
+              kind: 'release',
+              score: result._esResult._score
+            })
+          })
+          return resolve(data)
+        })
+      }),
+      new Promise((resolve, reject) => {
+        return Track.esSearch({
+          from: 0,
+          size: 50,
+          query: {
+            term: {
+              tags: {
+                value: tag
+              }
+            }
+          }
+        }, {
+          hydrate: true,
+          hydrateWithESResults: true,
+          hydrateOptions: {
+            select: 'title display_artist tags track_id'
+          }
+        }, (err, results) => {
+          if (err) return reject(err)
+          const data = results.hits.hits.map(result => {
+            return Object.assign({}, result._doc, {
+              kind: 'track',
+              score: result._esResult._score
+            })
+          })
+          return resolve(data)
+        })
+      })
+    ])
+    ctx.body = {
+      data: result.flat(1).sort((a, b) => b.score - a.score)
+    }
+  } catch (err) {
+    ctx.throw(ctx.status, err.message)
+  }
+  await next()
+})
+
 router.get('/', async (ctx, next) => {
   try {
     const isValid = validateQuery(ctx.request.query)

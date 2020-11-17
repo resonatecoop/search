@@ -48,6 +48,4 @@ ReleaseSchema.plugin(mongoosastic, {
 
 const Release = db.model('Release', ReleaseSchema, 'Releases')
 
-Release.synchronize()
-
 export default Release
