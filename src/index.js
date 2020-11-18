@@ -13,7 +13,8 @@ const validateQuery = new AJV({
   required: ['q'],
   properties: {
     q: {
-      type: 'string'
+      type: 'string',
+      minLength: 3
     }
   }
 })
@@ -36,9 +37,12 @@ router.get('/tag/:tag', async (ctx, next) => {
           from: 0,
           size: 50,
           query: {
-            term: {
+            fuzzy: {
               tags: {
-                value: tag
+                value: tag,
+                fuzziness: 'AUTO',
+                max_expansions: 10,
+                prefix_length: 3
               }
             }
           }
@@ -64,9 +68,12 @@ router.get('/tag/:tag', async (ctx, next) => {
           from: 0,
           size: 50,
           query: {
-            term: {
+            fuzzy: {
               tags: {
-                value: tag
+                value: tag,
+                fuzziness: 'AUTO',
+                max_expansions: 10,
+                prefix_length: 3
               }
             }
           }
