@@ -1,7 +1,6 @@
 import Koa from 'koa'
 import AJV from 'ajv'
 import Router from '@koa/router'
-// import hash from 'promise-hash/lib/promise-hash'
 
 const validateQuery = new AJV({
   coerceTypes: true,
@@ -35,14 +34,15 @@ router.get('/tag/:tag', async (ctx, next) => {
       new Promise((resolve, reject) => {
         return Release.esSearch({
           from: 0,
-          size: 50,
+          size: 10,
           query: {
             fuzzy: {
               tags: {
                 value: tag,
                 fuzziness: 'AUTO',
                 max_expansions: 10,
-                prefix_length: 3
+                prefix_length: 3,
+                boost: 2.0
               }
             }
           }
@@ -56,38 +56,7 @@ router.get('/tag/:tag', async (ctx, next) => {
           if (err) return reject(err)
           const data = results.hits.hits.map(result => {
             return Object.assign({}, result._doc, {
-              kind: 'release',
-              score: result._esResult._score
-            })
-          })
-          return resolve(data)
-        })
-      }),
-      new Promise((resolve, reject) => {
-        return Track.esSearch({
-          from: 0,
-          size: 50,
-          query: {
-            fuzzy: {
-              tags: {
-                value: tag,
-                fuzziness: 'AUTO',
-                max_expansions: 10,
-                prefix_length: 3
-              }
-            }
-          }
-        }, {
-          hydrate: true,
-          hydrateWithESResults: true,
-          hydrateOptions: {
-            select: 'title display_artist tags track_id'
-          }
-        }, (err, results) => {
-          if (err) return reject(err)
-          const data = results.hits.hits.map(result => {
-            return Object.assign({}, result._doc, {
-              kind: 'track',
+              kind: 'album', // ep, lp
               score: result._esResult._score
             })
           })
@@ -95,6 +64,12 @@ router.get('/tag/:tag', async (ctx, next) => {
         })
       })
     ])
+
+    if (!result.flat(1).length) {
+      ctx.status = 404
+      ctx.throw(ctx.status, 'No results')
+    }
+
     ctx.body = {
       data: result.flat(1).sort((a, b) => b.score - a.score)
     }
@@ -120,12 +95,13 @@ router.get('/', async (ctx, next) => {
       new Promise((resolve, reject) => {
         return Release.esSearch({
           from: 0,
-          size: 50,
+          size: 10,
           query: {
             multi_match: {
               query: q,
-              fields: ['display_artist', 'title', 'tags'],
-              operator: 'or'
+              fields: ['display_artist', 'title', 'tags', 'composers', 'performers'],
+              operator: 'or',
+              minimum_should_match: 2
             }
           }
         }, {
@@ -138,7 +114,7 @@ router.get('/', async (ctx, next) => {
           if (err) return reject(err)
           const data = results.hits.hits.map(result => {
             return Object.assign({}, result._doc, {
-              kind: 'release',
+              kind: 'album',
               score: result._esResult._score
             })
           })
@@ -148,12 +124,13 @@ router.get('/', async (ctx, next) => {
       new Promise((resolve, reject) => {
         return Track.esSearch({
           from: 0,
-          size: 50,
+          size: 10,
           query: {
             multi_match: {
               query: q,
-              fields: ['display_artist', 'title', 'tags'],
-              operator: 'or'
+              fields: ['title'], // may add more later
+              operator: 'or',
+              minimum_should_match: 2
             }
           }
         }, {
@@ -177,7 +154,8 @@ router.get('/', async (ctx, next) => {
         return Profile.search({
           query_string: {
             query: q,
-            fuzziness: 'AUTO'
+            default_field: 'name',
+            minimum_should_match: 2
           }
         }, {
           hydrate: true,
@@ -196,6 +174,11 @@ router.get('/', async (ctx, next) => {
         })
       })
     ])
+
+    if (!result.flat(1).length) {
+      ctx.status = 404
+      ctx.throw(ctx.status, 'No results')
+    }
 
     ctx.body = {
       data: result.flat(1).sort((a, b) => b.score - a.score)
