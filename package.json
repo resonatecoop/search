@@ -20,6 +20,7 @@
     "@koa/router": "^8.0.8",
     "ajv": "^6.12.2",
     "bluebird": "^3.7.2",
+    "decode-uri-component": "^0.2.0",
     "dotenv-safe": "^8.2.0",
     "elasticsearch": "^16.7.1",
     "ioredis": "^4.16.3",
