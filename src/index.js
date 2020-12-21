@@ -29,52 +29,56 @@ const router = new Router()
 router.get('/tag/:tag', async (ctx, next) => {
   const tag = ctx.params.tag
   const { page = 1 } = ctx.request.query
-  const limit = 10
+  const limit = 20
   const offset = page > 1 ? (page - 1) * limit : 0
 
   try {
-    const result = await Promise.all([
-      new Promise((resolve, reject) => {
-        return Release.esSearch({
-          from: offset,
-          size: limit,
-          query: {
-            fuzzy: {
-              tags: {
-                value: tag,
-                fuzziness: 'AUTO',
-                max_expansions: 10,
-                prefix_length: 3,
-                boost: 2.0
-              }
+    const result = await new Promise((resolve, reject) => {
+      return Release.esSearch({
+        from: offset,
+        size: limit,
+        query: {
+          fuzzy: {
+            tags: {
+              value: tag,
+              fuzziness: 'AUTO',
+              max_expansions: 10,
+              prefix_length: 3,
+              boost: 2.0
             }
           }
-        }, {
-          hydrate: true,
-          hydrateWithESResults: true,
-          hydrateOptions: {
-            select: 'title display_artist tags track_group_id'
-          }
-        }, (err, results) => {
-          if (err) return reject(err)
-          const data = results.hits.hits.map(result => {
+        }
+      }, {
+        hydrate: true,
+        hydrateWithESResults: true,
+        hydrateOptions: {
+          select: 'title display_artist tags track_group_id'
+        }
+      }, (err, results) => {
+        if (err) return reject(err)
+        console.log(results)
+
+        return resolve({
+          total: results.hits.total,
+          data: results.hits.hits.map(result => {
             return Object.assign({}, result._doc, {
               kind: 'album', // ep, lp
               score: result._esResult._score
             })
           })
-          return resolve(data)
         })
       })
-    ])
+    })
 
-    if (!result.flat(1).length) {
+    if (!result.data.length) {
       ctx.status = 404
       ctx.throw(ctx.status, 'No results')
     }
 
     ctx.body = {
-      data: result.flat(1).sort((a, b) => b.score - a.score)
+      count: result.total,
+      numberOfPages: Math.ceil(result.total / limit),
+      data: result.data.sort((a, b) => b.score - a.score)
     }
   } catch (err) {
     ctx.throw(ctx.status, err.message)
