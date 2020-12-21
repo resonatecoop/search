@@ -41,6 +41,8 @@ const syncReleases = async () => {
   const result = await query(`
     SELECT trackGroup.id, trackGroup.title, trackGroup.display_artist, trackGroup.creator_id, trackGroup.composers, trackGroup.composers, trackGroup.tags, trackGroup.about
     FROM track_groups as trackGroup
+    INNER JOIN rsntr_usermeta AS um ON(um.user_id = trackGroup.creator_id AND um.meta_key = 'role' AND um.meta_value IN('member', 'bands', 'label-owner'))
+    WHERE trackGroup.private = false
   `)
 
   return Promise.map(result, (item) => {
