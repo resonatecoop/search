@@ -28,13 +28,16 @@ const router = new Router()
 
 router.get('/tag/:tag', async (ctx, next) => {
   const tag = ctx.params.tag
+  const { page = 1 } = ctx.request.query
+  const limit = 10
+  const offset = page > 1 ? (page - 1) * limit : 0
 
   try {
     const result = await Promise.all([
       new Promise((resolve, reject) => {
         return Release.esSearch({
-          from: 0,
-          size: 10,
+          from: offset,
+          size: limit,
           query: {
             fuzzy: {
               tags: {
@@ -89,7 +92,7 @@ router.get('/', async (ctx, next) => {
       ctx.throw(400, `${dataPath}: ${message}`)
     }
 
-    const q = ctx.request.query.q
+    const { q } = ctx.request.query
 
     const result = await Promise.all([
       new Promise((resolve, reject) => {
