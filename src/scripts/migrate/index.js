@@ -39,7 +39,7 @@ const syncReleases = async () => {
   logger.info('starting syncing releases')
 
   const result = await query(`
-    SELECT trackGroup.id, trackGroup.title, trackGroup.display_artist, trackGroup.creator_id, trackGroup.composers, trackGroup.composers, trackGroup.tags, trackGroup.about
+    SELECT trackGroup.id, trackGroup.title, trackGroup.release_date, trackGroup.display_artist, trackGroup.creator_id, trackGroup.composers, trackGroup.composers, trackGroup.tags, trackGroup.about
     FROM track_groups as trackGroup
     INNER JOIN rsntr_usermeta AS um ON(um.user_id = trackGroup.creator_id AND um.meta_key = 'role' AND um.meta_value IN('member', 'bands', 'label-owner'))
     WHERE trackGroup.private = false
@@ -52,6 +52,10 @@ const syncReleases = async () => {
       creator_id: item.creator_id,
       display_artist: item.display_artist,
       about: item.about
+    }
+
+    if (item.release_date) {
+      data.release_date = new Date(item.release_date)
     }
 
     if (item.composers) {

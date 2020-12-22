@@ -20,6 +20,10 @@ const ReleaseSchema = new Schema({
     type: String,
     es_indexed: true
   },
+  release_date: {
+    type: Date, // new releases with minimum match should be boosted
+    es_indexed: true
+  },
   about: {
     type: String,
     es_indexed: true
