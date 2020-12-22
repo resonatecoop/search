@@ -38,13 +38,38 @@ router.get('/tag/:tag', async (ctx, next) => {
         from: offset,
         size: limit,
         query: {
-          fuzzy: {
-            tags: {
-              value: tag,
-              fuzziness: 'AUTO',
-              max_expansions: 10,
-              prefix_length: 3,
-              boost: 2.0
+          function_score: {
+            score_mode: 'first',
+            functions: [
+              {
+                filter: {
+                  exists: {
+                    field: 'release_date'
+                  }
+                },
+                gauss: {
+                  release_date: {
+                    origin: new Date().toISOString(),
+                    scale: '365d',
+                    decay: 0.5
+                  }
+                }
+              },
+              {
+                script_score: {
+                  script: '0'
+                }
+              }
+            ],
+            query: {
+              fuzzy: {
+                tags: {
+                  value: tag,
+                  fuzziness: 'AUTO',
+                  max_expansions: 10,
+                  prefix_length: 3
+                }
+              }
             }
           }
         }
