@@ -67,7 +67,10 @@ const syncReleases = async () => {
     }
 
     if (item.tags) {
-      data.tags = item.tags.split(',')
+      data.tags = item.tags
+        .split(',')
+        .map(tag => tag.replace(/-|\s/g, ''))
+        .filter(Boolean)
     }
 
     return Release.findOneAndUpdate(
@@ -151,13 +154,14 @@ const syncTracks = async () => {
     }
 
     if (item.tags) {
-      data.tags = decodeUriComponent(item.tags)
+      data.tags = decodeUriComponent(decodeUriComponent(item.tags))
         .split(',')
-        .map(item => item.trim())
-        .map(tag => decodeUriComponent(tag)
-          .split(',')
-          .map(tag => tag.trim())
-        ).flat(1)
+        .map(tag => tag
+          .trim()
+          .toLowerCase()
+          .replace(/-|\s/g, '')
+        )
+        .filter(Boolean)
     }
     return Track.findOneAndUpdate(
       { track_id: item.id },
