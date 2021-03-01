@@ -81,7 +81,6 @@ router.get('/tag/:tag', async (ctx, next) => {
         }
       }, (err, results) => {
         if (err) return reject(err)
-        console.log(results)
 
         return resolve({
           total: results.hits.total,
