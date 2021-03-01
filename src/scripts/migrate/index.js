@@ -43,6 +43,7 @@ const syncReleases = async () => {
     FROM track_groups as trackGroup
     INNER JOIN rsntr_usermeta AS um ON(um.user_id = trackGroup.creator_id AND um.meta_key = 'role' AND um.meta_value IN('member', 'bands', 'label-owner'))
     WHERE trackGroup.private = false
+    AND trackGroup.enabled = true
   `)
 
   return Promise.map(result, (item) => {
