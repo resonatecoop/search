@@ -16,6 +16,10 @@ const ProfileSchema = new Schema({
     es_boost: 2.0,
     es_indexed: true
   },
+  label: {
+    type: String,
+    es_indexed: true
+  },
   bio: {
     type: String,
     es_indexed: true
@@ -30,6 +34,10 @@ const ProfileSchema = new Schema({
   },
   tags: {
     type: [String],
+    es_indexed: true
+  },
+  last_activity: {
+    type: Date,
     es_indexed: true
   }
 }, {

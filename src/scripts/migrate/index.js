@@ -4,6 +4,7 @@ import {
   Resonate as sequelize
 } from './db/models'
 
+import { Op } from 'sequelize'
 import winston from 'winston'
 import Promise from 'bluebird'
 import decodeUriComponent from 'decode-uri-component'
@@ -102,7 +103,7 @@ const syncProfiles = async () => {
     ORDER BY id
   `)
 
-  return Promise.map(result, (item) => {
+  return Promise.map(result, async (item) => {
     const kind = {
       member: 'artist',
       'label-owner': 'label',
@@ -115,6 +116,39 @@ const syncProfiles = async () => {
       country: item.country,
       kind: kind,
       name: decodeUriComponent(item.name)
+    }
+
+    if (data.kind !== 'label') {
+      const [label] = await query(`
+        SELECT um2.meta_value as name
+        FROM rsntr_usermeta as um
+        INNER JOIN rsntr_usermeta as um2 ON (um.meta_value = um2.user_id AND um2.meta_key = 'nickname')
+        WHERE um.user_id = :creatorId
+        AND um.meta_key = 'mylabel'
+        LIMIT 1
+      `, { creatorId: item.id })
+
+      if (label && label.name) {
+        data.label = label.name
+      }
+
+      const [track] = await query(`
+        SELECT track.date as date
+        FROM tracks as track
+        WHERE track.uid = :creatorId
+        AND track.status IN(0, 2, 3)
+        AND track.date IS NOT NULL
+        AND track.track_album != ''
+        AND track.track_cover_art != ''
+        ORDER BY track.date DESC
+        LIMIT 1
+      `, { creatorId: item.id })
+
+      if (track && track.date) {
+        data.last_activity = new Date(track.date * 1000) // unix timestamp to date
+      } else {
+        data.last_activity = null
+      }
     }
 
     if (item.bio) {

@@ -182,11 +182,38 @@ router.get('/', async (ctx, next) => {
         })
       }),
       new Promise((resolve, reject) => {
-        return Profile.search({
-          query_string: {
-            query: q,
-            default_field: 'name',
-            minimum_should_match: 2
+        return Profile.esSearch({
+          from: 0,
+          size: 10,
+          query: {
+            function_score: {
+              boost_mode: 'multiply',
+              boost: 1,
+              score_mode: 'first',
+              functions: [
+                {
+                  filter: {
+                    range: { last_activity: { gte: 'now-1y', lte: 'now' } }
+                  },
+                  weight: 2
+                },
+                {
+                  filter: {
+                    exists: {
+                      field: 'last_activity'
+                    }
+                  },
+                  weight: 1.5
+                }
+              ],
+              query: {
+                query_string: {
+                  query: q,
+                  default_field: 'name',
+                  minimum_should_match: 2
+                }
+              }
+            }
           }
         }, {
           hydrate: true,
