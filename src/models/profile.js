@@ -52,4 +52,46 @@ ProfileSchema.plugin(mongoosastic, {
 
 const Profile = db.model('Profile', ProfileSchema, 'Profiles')
 
+Profile.createMapping({
+  settings: {
+    number_of_shards: 1,
+    analysis: {
+      analyzer: {
+        autocomplete: {
+          tokenizer: 'custom_tokenizer'
+        }
+      },
+      tokenizer: {
+        custom_tokenizer: {
+          type: 'ngram',
+          min_gram: 2,
+          max_gram: 30,
+          token_chars: [
+            'letter',
+            'digit',
+            'symbol',
+            'punctuation'
+          ]
+        }
+      }
+    }
+  },
+  mappings: {
+    index: {
+      properties: {
+        name: {
+          type: 'text',
+          analyzer: 'autocomplete'
+        }
+      }
+    }
+  }
+}, (err, mapping) => {
+  if (err) {
+    console.log(err)
+  } else {
+    console.log(mapping)
+  }
+})
+
 export default Profile
