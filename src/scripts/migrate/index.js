@@ -4,7 +4,6 @@ import {
   Resonate as sequelize
 } from './db/models'
 
-import { Op } from 'sequelize'
 import winston from 'winston'
 import Promise from 'bluebird'
 import decodeUriComponent from 'decode-uri-component'
