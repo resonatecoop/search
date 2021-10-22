@@ -1,5 +1,5 @@
 {
-  "name": "resonate-search",
+  "name": "@resonate/search",
   "version": "1.0.0",
   "description": "Resonate Elastic Search Service",
   "main": "index.js",
