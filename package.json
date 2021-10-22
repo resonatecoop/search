@@ -5,7 +5,9 @@
   "main": "index.js",
   "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "npm run test:lint && npm run test:deps",
+    "test:lint": "standard src",
+    "test:deps": "dependency-check --verbose --missing ./lib/**/*.js --no-dev --i dotenv-safe",
     "dev": "babel-node -r ./node_modules/dotenv-safe/config ./src/server.js",
     "start": "node -r ./node_modules/dotenv-safe/config ./lib/server.js",
     "build": "babel src -d lib"
@@ -47,6 +49,7 @@
     "@babel/preset-env": "^7.8.4",
     "@babel/register": "^7.8.3",
     "babel-plugin-add-module-exports": "^1.0.2",
+    "dependency-check": "^4.1.0",
     "mysql2": "^2.1.0",
     "sequelize": "^5.21.6",
     "tape": "^4.13.2",
