@@ -16,7 +16,7 @@ const ProfileSchema = new Schema({
     es_boost: 2.0,
     es_indexed: true
   },
-  twitter_url: {
+  twitter_handle: {
     type: String,
     es_boost: 2.0,
     es_indexed: true
