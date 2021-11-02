@@ -1,10 +1,13 @@
 {
-  "name": "resonate-search",
+  "name": "@resonate/search",
   "version": "1.0.0",
   "description": "Resonate Elastic Search Service",
   "main": "index.js",
+  "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "npm run test:lint && npm run test:deps",
+    "test:lint": "standard src",
+    "test:deps": "dependency-check --verbose --missing ./lib/**/*.js --no-dev --i dotenv-safe",
     "dev": "babel-node -r ./node_modules/dotenv-safe/config ./src/server.js",
     "start": "node -r ./node_modules/dotenv-safe/config ./lib/server.js",
     "build": "babel src -d lib"
@@ -23,6 +26,7 @@
     "decode-uri-component": "^0.2.0",
     "dotenv-safe": "^8.2.0",
     "elasticsearch": "^16.7.1",
+    "elasticsearch-sanitize": "^2.0.0",
     "ioredis": "^4.16.3",
     "keygrip": "^1.1.0",
     "koa": "^2.11.0",
@@ -45,9 +49,9 @@
     "@babel/preset-env": "^7.8.4",
     "@babel/register": "^7.8.3",
     "babel-plugin-add-module-exports": "^1.0.2",
+    "dependency-check": "^4.1.0",
     "mysql2": "^2.1.0",
     "sequelize": "^5.21.6",
-    "sequelize-cli": "^5.5.1",
     "tape": "^4.13.2",
     "yargs": "^15.3.1"
   }

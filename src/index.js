@@ -1,6 +1,7 @@
 import Koa from 'koa'
 import AJV from 'ajv'
 import Router from '@koa/router'
+import escapeElastic from 'elasticsearch-sanitize'
 
 const validateQuery = new AJV({
   coerceTypes: true,
@@ -208,7 +209,7 @@ router.get('/', async (ctx, next) => {
               ],
               query: {
                 query_string: {
-                  query: q,
+                  query: escapeElastic(q),
                   default_field: 'name',
                   minimum_should_match: 2
                 }
