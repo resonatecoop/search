@@ -116,6 +116,7 @@ const syncProfiles = async () => {
       city: item.artistCity || item.city,
       country: item.country,
       kind: kind,
+      twitter_handle: item.twitter_handle,
       name: decodeUriComponent(item.name)
     }
 
