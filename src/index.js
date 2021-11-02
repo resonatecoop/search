@@ -209,8 +209,8 @@ router.get('/', async (ctx, next) => {
               query: {
                 query_string: {
                   query: q,
-                  default_field: 'name',
-                  minimum_should_match: 2
+                  minimum_should_match: 2,
+                  fields: ['name', 'twitter_handle']
                 }
               }
             }
@@ -219,7 +219,7 @@ router.get('/', async (ctx, next) => {
           hydrate: true,
           hydrateWithESResults: true,
           hydrateOptions: {
-            select: 'name kind user_id'
+            select: 'name twitter_handle kind user_id'
           }
         }, (err, results) => {
           if (err) return reject(err)
