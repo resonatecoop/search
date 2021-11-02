@@ -94,6 +94,7 @@ const syncProfiles = async () => {
     MAX(CASE WHEN um.meta_key = 'description' THEN um.meta_value ELSE NULL END) AS bio,
     MAX(CASE WHEN um.meta_key = 'city' THEN um.meta_value ELSE NULL END) AS city,
     MAX(CASE WHEN um.meta_key = 'country' THEN um.meta_value ELSE NULL END) AS country,
+    MAX(CASE WHEN um.meta_key = 'twitter' THEN IF(locate('/',um.meta_value) = 0, um.meta_value,RIGHT(um.meta_value, locate('/', REVERSE(um.meta_value))-1)) ELSE NULL END) AS twitter_handle,
     umrole.meta_value as role
     FROM rsntr_users AS user
     JOIN rsntr_usermeta AS um ON(um.user_id = user.ID)
@@ -115,6 +116,7 @@ const syncProfiles = async () => {
       city: item.artistCity || item.city,
       country: item.country,
       kind: kind,
+      twitter_handle: item.twitter_handle,
       name: decodeUriComponent(item.name)
     }
 
