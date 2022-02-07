@@ -4,7 +4,7 @@ import {
   Resonate as sequelize
 } from './db/models'
 
-import { Op } from 'sequelize'
+import slug from 'slug'
 import winston from 'winston'
 import Promise from 'bluebird'
 import decodeUriComponent from 'decode-uri-component'
@@ -156,6 +156,8 @@ const syncProfiles = async () => {
     if (item.bio) {
       data.bio = decodeUriComponent(item.bio)
     }
+
+    data.name_slug = slug(data.name)
 
     return Profile.findOneAndUpdate(
       { user_id: item.id, kind: kind },
