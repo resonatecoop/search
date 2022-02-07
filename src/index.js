@@ -247,6 +247,54 @@ router.get('/', async (ctx, next) => {
   await next()
 })
 
+router.get('/artists', async (ctx, next) => {
+  const perPage = 20
+  const page = ctx.query.page > 0 ? ctx.query.page : 0
+
+  try {
+    const result = await Profile.find({
+      kind: ['band', 'artist']
+    })
+      .sort({
+        last_activity: -1
+      })
+      .select('-_id name twitter_handle label bio city country')
+      .skip(perPage * page)
+      .limit(perPage)
+
+    ctx.body = {
+      data: result
+    }
+  } catch (err) {
+    ctx.throw(ctx.status, err.message)
+  }
+  await next()
+})
+
+router.get('/labels', async (ctx, next) => {
+  const perPage = 20
+  const page = ctx.query.page > 0 ? ctx.query.page : 0
+
+  try {
+    const result = await Profile.find({
+      kind: 'label'
+    })
+      .sort({
+        last_activity: -1
+      })
+      .select('-_id name twitter_handle bio city country')
+      .skip(perPage * page)
+      .limit(perPage)
+
+    ctx.body = {
+      data: result
+    }
+  } catch (err) {
+    ctx.throw(ctx.status, err.message)
+  }
+  await next()
+})
+
 app
   .use(router.routes())
   .use(router.allowedMethods({
