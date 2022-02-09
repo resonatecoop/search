@@ -4,6 +4,7 @@ import {
   Resonate as sequelize
 } from './db/models'
 
+import { mongoose } from '../mongoose'
 import slug from 'slug'
 import winston from 'winston'
 import Promise from 'bluebird'
@@ -219,4 +220,5 @@ syncProfiles().then(() => {
   return syncReleases()
 }).then(() => {
   logger.info('synced releases')
+  mongoose.connection.close()
 })
