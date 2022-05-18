@@ -219,9 +219,11 @@ const syncTracks = async () => {
       syncTracks(),
       syncReleases()
     ])
+    logger.info('Done')
   } catch (err) {
     logger.error(err)
   } finally {
     mongooseConnection.close()
+    process.exit(0)
   }
 })()
