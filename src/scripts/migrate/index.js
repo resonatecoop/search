@@ -4,7 +4,7 @@ import {
   Resonate as sequelize
 } from './db/models'
 
-import { mongoose } from '../mongoose'
+import { db as mongooseConnection } from '../mongoose'
 import slug from 'slug'
 import winston from 'winston'
 import Promise from 'bluebird'
@@ -212,13 +212,16 @@ const syncTracks = async () => {
   }, { concurrency: 100 })
 }
 
-syncProfiles().then(() => {
-  logger.info('synced artists and bands')
-  return syncTracks()
-}).then(() => {
-  logger.info('synced tracks')
-  return syncReleases()
-}).then(() => {
-  logger.info('synced releases')
-  mongoose.connection.close()
-})
+(async () => {
+  try {
+    await Promise.all([
+      syncProfiles(),
+      syncTracks(),
+      syncReleases()
+    ])
+  } catch (err) {
+    logger.error(err)
+  } finally {
+    mongooseConnection.close()
+  }
+})()
