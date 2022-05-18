@@ -21,7 +21,6 @@ db.on('disconnected', function () {
 process.on('SIGINT', gracefulExit).on('SIGTERM', gracefulExit)
 
 try {
-  options.server.socketOptions = options.replset.socketOptions = { keepAlive: 1 }
   mongoose.connect(mongodbUri, options)
 } catch (err) {
   console.log('Sever initialization failed', err.message)
