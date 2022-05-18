@@ -4,7 +4,7 @@ import {
   Resonate as sequelize
 } from './db/models'
 
-import { db as mongooseConnection } from '../mongoose'
+import { db as mongooseConnection } from '../../mongoose'
 import slug from 'slug'
 import winston from 'winston'
 import Promise from 'bluebird'
