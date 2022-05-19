@@ -40,7 +40,7 @@ const TrackSchema = new Schema({
 })
 
 TrackSchema.plugin(mongoosastic, {
-  esClient: esClient
+  esClient
 })
 
 const Track = db.model('Track', TrackSchema, 'Tracks')

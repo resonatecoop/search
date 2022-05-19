@@ -116,7 +116,7 @@ const syncProfiles = async () => {
       user_id: item.id,
       city: item.artistCity || item.city,
       country: item.country,
-      kind: kind,
+      kind,
       twitter_handle: item.twitter_handle,
       name: decodeUriComponent(item.name)
     }
@@ -161,7 +161,7 @@ const syncProfiles = async () => {
     data.name_slug = slug(data.name)
 
     return Profile.findOneAndUpdate(
-      { user_id: item.id, kind: kind },
+      { user_id: item.id, kind },
       data,
       { new: true, upsert: true, useFindAndModify: false }
     )

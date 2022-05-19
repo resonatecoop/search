@@ -6,7 +6,7 @@ const Schema = mongoose.Schema
 
 const ReleaseSchema = new Schema({
   track_group_id: {
-    type: String // release uuid
+    type: String
   },
   title: {
     type: String,
@@ -47,7 +47,7 @@ const ReleaseSchema = new Schema({
 })
 
 ReleaseSchema.plugin(mongoosastic, {
-  esClient: esClient
+  esClient
 })
 
 const Release = db.model('Release', ReleaseSchema, 'Releases')

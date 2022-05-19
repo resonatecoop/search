@@ -56,7 +56,7 @@ const ProfileSchema = new Schema({
 })
 
 ProfileSchema.plugin(mongoosastic, {
-  esClient: esClient
+  esClient
 })
 
 const Profile = db.model('Profile', ProfileSchema, 'Profiles')
