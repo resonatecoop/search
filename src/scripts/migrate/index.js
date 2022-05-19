@@ -4,6 +4,11 @@ import {
   Resonate as sequelize
 } from './db/models'
 
+<<<<<<< HEAD
+=======
+import { db as mongooseConnection } from '../../mongoose'
+import slug from 'slug'
+>>>>>>> development
 import winston from 'winston'
 import Promise from 'bluebird'
 import decodeUriComponent from 'decode-uri-component'
@@ -156,6 +161,8 @@ const syncProfiles = async () => {
       data.bio = decodeUriComponent(item.bio)
     }
 
+    data.name_slug = slug(data.name)
+
     return Profile.findOneAndUpdate(
       { user_id: item.id, kind: kind },
       data,
@@ -208,12 +215,18 @@ const syncTracks = async () => {
   }, { concurrency: 100 })
 }
 
-syncProfiles().then(() => {
-  logger.info('synced artists and bands')
-  return syncTracks()
-}).then(() => {
-  logger.info('synced tracks')
-  return syncReleases()
-}).then(() => {
-  logger.info('synced releases')
-})
+(async () => {
+  try {
+    await Promise.all([
+      syncProfiles(),
+      syncTracks(),
+      syncReleases()
+    ])
+    logger.info('Done')
+  } catch (err) {
+    logger.error(err)
+  } finally {
+    mongooseConnection.close()
+    process.exit(0)
+  }
+})()
