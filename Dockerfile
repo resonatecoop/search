@@ -1,4 +1,4 @@
-FROM node:15-alpine AS builder
+FROM node:latest-alpine AS builder
 
 RUN mkdir -p /var/www/api
 WORKDIR /var/www/api
@@ -8,7 +8,7 @@ COPY . .
 RUN npm install
 RUN npm run build
 
-FROM node:15-alpine
+FROM node:latest-alpine
 
 RUN mkdir -p /var/www/api/dist
 
