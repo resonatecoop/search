@@ -18,7 +18,6 @@ COPY .env ./
 COPY .env.example ./
 COPY ./package* ./
 COPY ./index.js ./
-COPY ./server.js ./
 
 COPY --from=builder /var/www/api/node_modules ./node_modules
 COPY --from=builder /var/www/api/lib ./lib
