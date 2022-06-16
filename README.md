@@ -2,6 +2,7 @@
 
 ## Stack
 
+- NodeJs (>=18)
 - Mongodb with mongoose and mongoosastic
 - Elasticsearch
 - Koajs
