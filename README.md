@@ -1,4 +1,4 @@
-# Resonate Search Demo
+# Resonate Search API
 
 ## Stack
 
