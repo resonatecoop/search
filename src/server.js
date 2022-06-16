@@ -53,7 +53,6 @@ app
     compression: true, // https://github.com/koajs/cash#compression
     setCachedHeader: true, // https://github.com/koajs/cash#setcachedheader
     get (key) {
-      console.log(key)
       return cache.get(key)
     },
     set (key, value) {
