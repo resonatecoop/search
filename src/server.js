@@ -1,4 +1,3 @@
-import search from '.'
 import Koa from 'koa'
 import logger from 'koa-logger'
 import Redis from 'ioredis'
@@ -6,12 +5,26 @@ import compress from 'koa-compress'
 import mount from 'koa-mount'
 import error from 'koa-json-error'
 import ratelimit from 'koa-ratelimit'
+import etag from 'koa-etag'
 import session from 'koa-session'
 import KeyGrip from 'keygrip'
+import LRU from 'lru-cache'
+import koaCash from 'koa-cash'
+import ms from 'ms'
+
+const CACHE_MAX_AGE = process.env.NODE_ENV === 'production' ? ms('3h') : ms('1m')
+
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv-safe').config() // babel-watch support
+}
 
 const PORT = process.env.PORT || 3000
 
 const app = new Koa()
+
+const cache = new LRU({
+  maxAge: CACHE_MAX_AGE // global max age
+})
 
 app.keys = new KeyGrip([process.env.APP_KEY, process.env.APP_KEY_2], 'sha256')
 
@@ -34,6 +47,20 @@ app
     max: 100,
     disableHeader: false
   }))
+  .use(koaCash({
+    maxAge: CACHE_MAX_AGE,
+    threshold: 0,
+    compression: true, // https://github.com/koajs/cash#compression
+    setCachedHeader: true, // https://github.com/koajs/cash#setcachedheader
+    get (key) {
+      console.log(key)
+      return cache.get(key)
+    },
+    set (key, value) {
+      return cache.set(key, value)
+    }
+  }))
+  .use(etag()) // required for koa-cash to propertly set 304
   .use(session(app))
   .use(compress({
     filter: (contentType) => {
@@ -50,7 +77,7 @@ app
     }
   }))
 
-app.use(mount(search))
+app.use(mount(require('./index.js')))
 
 app.listen(PORT, () => {
   console.log(`Resonate Search API is running on port: ${PORT}`)

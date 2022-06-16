@@ -1,12 +1,15 @@
 import Koa from 'koa'
 import AJV from 'ajv'
 import Router from '@koa/router'
+import { map } from 'awaity/esm'
 
-const validateQuery = new AJV({
+const ajvConfig = {
   coerceTypes: true,
   allErrors: true,
   removeAdditional: true
-}).compile({
+}
+
+const validateSearch = new AJV(ajvConfig).compile({
   type: 'object',
   additionalProperties: false,
   required: ['q'],
@@ -14,6 +17,21 @@ const validateQuery = new AJV({
     q: {
       type: 'string',
       minLength: 3
+    }
+  }
+})
+
+const validateList = new AJV(ajvConfig).compile({
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    limit: {
+      type: 'number',
+      min: 1
+    },
+    page: {
+      type: 'number',
+      min: 1
     }
   }
 })
@@ -112,10 +130,10 @@ router.get('/tag/:tag', async (ctx, next) => {
 
 router.get('/', async (ctx, next) => {
   try {
-    const isValid = validateQuery(ctx.request.query)
+    const isValid = validateSearch(ctx.request.query)
 
     if (!isValid) {
-      const { message, dataPath } = validateQuery.errors[0]
+      const { message, dataPath } = validateSearch.errors[0]
       ctx.status = 400
       ctx.throw(400, `${dataPath}: ${message}`)
     }
@@ -248,8 +266,17 @@ router.get('/', async (ctx, next) => {
 })
 
 router.get('/artists', async (ctx, next) => {
-  const perPage = 20
-  const page = ctx.query.page > 0 ? ctx.query.page : 0
+  if (await ctx.cashed()) return
+
+  const isValid = validateList(ctx.request.query)
+
+  if (!isValid) {
+    const { message, dataPath } = validateSearch.errors[0]
+    ctx.status = 400
+    ctx.throw(400, `${dataPath}: ${message}`)
+  }
+
+  const { page = 1, limit = 20 } = ctx.request.query
 
   try {
     const result = await Profile.find({
@@ -258,12 +285,24 @@ router.get('/artists', async (ctx, next) => {
       .sort({
         last_activity: -1
       })
-      .select('-_id name twitter_handle label bio city country')
-      .skip(perPage * page)
-      .limit(perPage)
+      .select('-_id user_id name twitter_handle label bio city country')
+      .skip(limit * page)
+      .limit(limit)
 
     ctx.body = {
-      data: result
+      data: await map(result, async (item) => {
+        const response = await fetch(`https://resonate.is/api/fetch-profile-image/${item.user_id}`)
+        const result = await response.json()
+        return {
+          name: item.name,
+          twitter_handle: item.twitter_handle,
+          label: item.label,
+          bio: item.bio,
+          city: item.city,
+          country: item.country,
+          images: result
+        }
+      })
     }
   } catch (err) {
     ctx.throw(ctx.status, err.message)
@@ -272,22 +311,43 @@ router.get('/artists', async (ctx, next) => {
 })
 
 router.get('/labels', async (ctx, next) => {
-  const perPage = 20
-  const page = ctx.query.page > 0 ? ctx.query.page : 0
+  if (await ctx.cashed()) return
+
+  const isValid = validateList(ctx.request.query)
+
+  if (!isValid) {
+    const { message, dataPath } = validateSearch.errors[0]
+    ctx.status = 400
+    ctx.throw(400, `${dataPath}: ${message}`)
+  }
+
+  const { page = 1, limit = 20 } = ctx.request.query
 
   try {
     const result = await Profile.find({
       kind: 'label'
     })
       .sort({
-        last_activity: -1
+        user_id: -1 // TODO set last_activity timestamp on labels with artists or tracks
       })
-      .select('-_id name twitter_handle bio city country')
-      .skip(perPage * page)
-      .limit(perPage)
+      .select('-_id name twitter_handle bio city country user_id')
+      .skip(limit * page)
+      .limit(limit)
 
     ctx.body = {
-      data: result
+      data: await map(result, async (item) => {
+        const response = await fetch(`https://resonate.is/api/fetch-profile-image/${item.user_id}`)
+        const result = await response.json()
+        return {
+          name: item.name,
+          twitter_handle: item.twitter_handle,
+          label: item.label,
+          bio: item.bio,
+          city: item.city,
+          country: item.country,
+          images: result
+        }
+      })
     }
   } catch (err) {
     ctx.throw(ctx.status, err.message)
