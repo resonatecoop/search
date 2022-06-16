@@ -185,11 +185,9 @@ router.get('/', async (ctx, next) => {
           from: 0,
           size: limit,
           query: {
-            multi_match: {
+            query_string: {
               query: q,
-              fields: ['title'], // may add more later
-              operator: 'or',
-              minimum_should_match: 2
+              fields: ['title']
             }
           }
         }, {
