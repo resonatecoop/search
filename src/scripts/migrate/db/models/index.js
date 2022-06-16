@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import Sequelize from 'sequelize'
+import sequelize, { Sequelize, DataTypes } from 'sequelize'
 
 const basename = path.basename(__filename)
 const env = process.env.NODE_ENV || 'development'
@@ -22,10 +22,12 @@ fs
     return (file.indexOf('.') !== 0) && (file !== basename) && (file.slice(-3) === '.js')
   })
   .forEach(file => {
-    const model = db.Resonate.import(path.join(__dirname, '/resonate', file))
+    const model = require(path.join(__dirname, '/resonate', file))(db.Resonate, DataTypes)
+
     db[model.name] = model
   })
 
+db.sequelize = sequelize
 db.Sequelize = Sequelize
 
 Object.keys(db).forEach(modelName => {
