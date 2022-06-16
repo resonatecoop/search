@@ -17,6 +17,16 @@ const validateSearch = new AJV(ajvConfig).compile({
     q: {
       type: 'string',
       minLength: 3
+    },
+    from: {
+      type: 'number',
+      min: 0,
+      max: 100
+    },
+    limit: {
+      type: 'number',
+      min: 1,
+      max: 100
     }
   }
 })
@@ -138,13 +148,13 @@ router.get('/', async (ctx, next) => {
       ctx.throw(400, `${dataPath}: ${message}`)
     }
 
-    const { q } = ctx.request.query
+    const { q, limit = 20 } = ctx.request.query
 
     const result = await Promise.all([
       new Promise((resolve, reject) => {
         return Release.esSearch({
           from: 0,
-          size: 10,
+          size: limit,
           query: {
             multi_match: {
               query: q,
@@ -173,7 +183,7 @@ router.get('/', async (ctx, next) => {
       new Promise((resolve, reject) => {
         return Track.esSearch({
           from: 0,
-          size: 10,
+          size: limit,
           query: {
             multi_match: {
               query: q,
@@ -202,7 +212,7 @@ router.get('/', async (ctx, next) => {
       new Promise((resolve, reject) => {
         return Profile.esSearch({
           from: 0,
-          size: 10,
+          size: limit,
           query: {
             function_score: {
               boost_mode: 'multiply',
