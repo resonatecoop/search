@@ -214,12 +214,12 @@ const syncTracks = async () => {
 
 (async () => {
   try {
-    await Promise.all([
-      syncProfiles(),
-      syncTracks(),
-      syncReleases()
-    ])
-    logger.info('Done')
+    await syncProfiles()
+    logger.info('Done syncing profiles')
+    await syncTracks()
+    logger.info('Done syncing tracks')
+    await syncReleases()
+    logger.info('Done syncing releases')
   } catch (err) {
     logger.error(err)
   } finally {
