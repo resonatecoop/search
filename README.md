@@ -1,7 +1,8 @@
-# Resonate Search Demo
+# Resonate Search API
 
 ## Stack
 
+- NodeJs (>=18)
 - Mongodb with mongoose and mongoosastic
 - Elasticsearch
 - Koajs
